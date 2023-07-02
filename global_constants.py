@@ -11,6 +11,7 @@ SuAr = 0.7853981633974  # equal to 0.25*pi -> surface area of a circle with R= 0
 
 # Applied strain at right boundary
 EPS0 = 0.1
+RATIO = 0.75
 
 # Applied body force field
 B0 = 0.0
