@@ -119,11 +119,11 @@ class Plate:
             # boundary = [x_top, y_top, x_right, y_right, x_left, y_left, x_bottom, y_bottom, x_hole, y_hole, n_hole]
             plt.plot(collo_points[0].detach(), collo_points[1].detach(), ".k")
             #top 
-            plt.plot(top_points[0].detach(), top_points[1].detach(), ".r")
+            plt.plot(top_points[0].detach(), top_points[1].detach(), ".b")
             #right
             plt.plot(right_points[0], right_points[1], ".b")
             #bottom
-            plt.plot(bottom_points[0], bottom_points[1], ".g")
+            plt.plot(bottom_points[0], bottom_points[1], ".b")
             #left
             plt.plot(left_points[0], left_points[1], ".b")
             #hole
