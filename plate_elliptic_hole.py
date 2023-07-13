@@ -114,7 +114,7 @@ class Plate:
         new_n_hole = torch.tensor((-x_hole/Re_x),(-y_hole/Re_y))
 
         print(n_hole)
-        print(////////)
+        print("////////")
         print(new_n_hole)
 
 
