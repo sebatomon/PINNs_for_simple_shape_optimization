@@ -110,7 +110,14 @@ class Plate:
         n_hole = torch.tensor(np.stack([-np.cos(phi), -np.sin(phi)]).T).float()
         r_hole = Re_x * torch.ones_like(x_hole)
         hole_points = [x_hole, y_hole, n_hole, r_hole]
-        
+
+        new_n_hole = torch.tensor((-x_hole/Re_x),(-y_hole/Re_y))
+
+        print(n_hole)
+        print(////////)
+        print(new_n_hole)
+
+
         return collo_points, top_points, right_points, left_points, bottom_points, hole_points
     
 
