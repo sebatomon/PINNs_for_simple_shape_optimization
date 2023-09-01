@@ -69,8 +69,11 @@ class Plate:
         phi = np.linspace(0, 0.5 * np.pi, int(N * 0.5 * np.pi * Re_x / L))
         x_hole = torch.tensor(Re_x * np.cos(phi), requires_grad=True).float()
         y_hole = torch.tensor(Re_y * np.sin(phi), requires_grad=True).float()
-
-        n_hole = torch.tensor(np.stack([-np.cos(phi), -np.sin(phi)]).T).float()
+        n_hole = torch.tensor(np.stack([-Re_y*np.cos(phi), -Re_x*np.sin(phi)]).T).float()
+        n_hole = n_hole / torch.linalg.norm(n_hole,axis=1)[:,None]
+        # old code
+        # n_hole = torch.tensor(np.stack([-np.cos(phi), -np.sin(phi)]).T).float()
+        
         boundary_points= [x_top, y_top, x_right, y_right, x_left, y_left, x_bottom, y_bottom, x_hole, y_hole, n_hole]
         return collo_points, boundary_points
 
@@ -107,14 +110,15 @@ class Plate:
         phi = np.linspace(0, 0.5 * np.pi, int(N * 0.5 * np.pi * Re_x / L))
         x_hole = torch.tensor(Re_x * np.cos(phi), requires_grad=True).float()
         y_hole = torch.tensor(Re_y * np.sin(phi), requires_grad=True).float()
-        #n_hole = torch.tensor(np.stack([-np.cos(phi), -np.sin(phi)]).T).float()
+        n_hole = torch.tensor(np.stack([-Re_y*np.cos(phi), -Re_x*np.sin(phi)]).T).float()
+        n_hole = n_hole / torch.linalg.norm(n_hole,axis=1)[:,None]
         r_hole = Re_x * torch.ones_like(x_hole)
         hole_points = [x_hole, y_hole, r_hole]
 
-        return collo_points, top_points, right_points, left_points, bottom_points, hole_points
+        return collo_points, top_points, right_points, left_points, bottom_points, hole_points, n_hole
     
 
-    def plot_plate_with_hole(self, collo_points, top_points, right_points, left_points, bottom_points, hole_points):
+    def plot_plate_with_hole(self, collo_points, top_points, right_points, left_points, bottom_points, hole_points, n_hole):
             # Visualize geometry (Dirichlet blue, Neumann red)
             # boundary = [x_top, y_top, x_right, y_right, x_left, y_left, x_bottom, y_bottom, x_hole, y_hole, n_hole]
             plt.plot(collo_points[0].detach(), collo_points[1].detach(), ".k")
@@ -128,6 +132,18 @@ class Plate:
             plt.plot(left_points[0], left_points[1], ".b")
             #hole
             plt.plot(hole_points[0].detach(), hole_points[1].detach(), ".r")
+            plt.axis("equal")
+            plt.show()
+
+    def plot_plate_with_hole_new(self, collo_points, top_points, right_points, left_points, bottom_points, hole_points, n_hole):
+        with torch.no_grad():
+            plt.scatter(collo_points[0].detach(), collo_points[1].detach(), marker=".", color="#C9C5BC")
+            plt.scatter(top_points[0].detach(), top_points[1].detach(), marker="o", color="#006561")
+            plt.scatter(bottom_points[0], bottom_points[1], marker="o", color="#006561")
+            plt.scatter(left_points[0], left_points[1], marker="o", color="#006561")
+            plt.scatter(right_points[0], right_points[1], marker="o", color="#006561")
+            plt.scatter(hole_points[0].detach(), hole_points[1], marker="o", color="black")
+            plt.quiver(hole_points[0].detach(), hole_points[1].detach(), n_hole[:,0], n_hole[:,1], color="black")
             plt.axis("equal")
             plt.show()
 
