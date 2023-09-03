@@ -111,6 +111,16 @@ class Plate:
         x_hole = torch.tensor(Re_x * np.cos(phi), requires_grad=True).float()
         y_hole = torch.tensor(Re_y * np.sin(phi), requires_grad=True).float()
         n_hole = torch.tensor(np.stack([-Re_y*np.cos(phi), -Re_x*np.sin(phi)]).T).float()
+
+        #alternitive calculation
+        #x = ((x_hole/Re_x * -(self.SuAr/(pi*Re_x))))
+        #y = ((y_hole/(self.SuAr/(pi*Re_x))) * -Re_x)
+        #n_hole_new = torch.t(torch.vstack([x,y]))
+
+        #print("n_hole = ",  n_hole)
+        #print("new_n_hole = ",  n_hole_new)
+
+
         n_hole = n_hole / torch.linalg.norm(n_hole,axis=1)[:,None]
         r_hole = Re_x * torch.ones_like(x_hole)
         hole_points = [x_hole, y_hole, r_hole]
