@@ -9,5 +9,5 @@ N1 = 4
 N2 = 2
 
 # Lame constants
-MU = 1
-LBD = 2
+MU = 10
+LBD = 20
