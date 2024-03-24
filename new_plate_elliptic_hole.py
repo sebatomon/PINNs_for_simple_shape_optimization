@@ -28,12 +28,16 @@ class Plate:
     def load_reference_data(self):
         # Load reference data
         data_input = torch.as_tensor(
-            np.loadtxt(f"data/inputs_Rx={self.R_x}.csv", delimiter=","), dtype=torch.float64
+            np.loadtxt(f"data/inputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
         )
         data_output = torch.as_tensor(
-            np.loadtxt(f"data/outputs_Rx={self.R_x}.csv", delimiter=","), dtype=torch.float64
+            np.loadtxt(f"data/outputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
         )
-        return data_input, data_output
+
+        data_hole = torch.as_tensor(
+            np.loadtxt(f"data/hole_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
+        )
+        return data_input, data_output, data_hole
     
     
     def collocation_weights(self, x):
