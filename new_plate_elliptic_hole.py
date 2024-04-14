@@ -7,7 +7,6 @@ import plotly.figure_factory as ff
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-torch.set_default_dtype(torch.float64)
 from global_constants import L, R
 
 class Plate:
@@ -52,39 +51,46 @@ class Plate:
         samples = qmc.LatinHypercube(d=2).random(1000 * self.M)
         indices = np.random.choice(1000 * self.M, self.M, p=self.collocation_weights(samples), replace=False)
         points = samples[indices]
-        collocation = torch.tensor(points, requires_grad=True).double()
+        r_collo = self.R_x * np.ones((indices.size, 1)) 
+        collocation = torch.tensor(np.hstack((points, r_collo)), requires_grad=True).double()
 
         # Boundary points
         x_top = torch.linspace(0, self.L, self.N, requires_grad=True).double()
         y_top = self.L * torch.ones((self.N, 1), requires_grad=True).double()
-        top = torch.column_stack([x_top, y_top]).double()
+        r_top = self. R_x * torch.ones((self.N, 1), requires_grad=True).double()
+        top = torch.column_stack([x_top, y_top, r_top]).double()
 
-        x_right = self.L * torch.ones((self.N, 1)).double()
-        y_right = torch.linspace(0, self.L, self.N).double()
-        right = torch.column_stack([x_right, y_right]).double()
+        x_right = self.L * torch.ones((self.N, 1), requires_grad=True).double()
+        y_right = torch.linspace(0, self.L, self.N, requires_grad=True).double()
+        r_right = self. R_x * torch.ones((self.N, 1), requires_grad=True).double()
+        right = torch.column_stack([x_right, y_right, r_right]).double()
 
         NN = int(self.N * (self.L - self.R_y) / self.L)
-        x_left = torch.zeros((NN, 1)).double()
-        y_left = torch.linspace(self.R_y, self.L, NN).double()
-        left = torch.column_stack([x_left, y_left]).double()
+        x_left = torch.zeros((NN, 1), requires_grad=True).double()
+        y_left = torch.linspace(self.R_y, self.L, NN, requires_grad=True).double()
+        r_left = self. R_x * torch.ones((NN, 1), requires_grad=True).double()
+        left = torch.column_stack([x_left, y_left, r_left]).double()
 
         NN = int(self.N * (self.L - self.R_x) / self.L)
-        x_bottom = torch.linspace(self.R_x, self.L, NN).double()
-        y_bottom = torch.zeros((NN, 1)).double()
-        bottom = torch.column_stack([x_bottom, y_bottom]).double()
+        x_bottom = torch.linspace(self.R_x, self.L, NN, requires_grad=True).double()
+        y_bottom = torch.zeros((NN, 1), requires_grad=True).double()
+        r_bottom = self. R_x * torch.ones((NN, 1), requires_grad=True).double()
+        bottom = torch.column_stack([x_bottom, y_bottom, r_bottom]).double()
 
 
         phi = np.linspace(0, 0.5 * np.pi, int(self.N*0.5))
         x_hole = torch.tensor(self.R_x * np.cos(phi), requires_grad=True).double()
         y_hole = torch.tensor(self.R_y * np.sin(phi), requires_grad=True).double()
-        n_hole = torch.tensor(np.stack([-(self.R_y) * np.cos(phi), -(self.R_x) * np.sin(phi)]).T).double()
+        n_hole = torch.tensor(np.stack([-(self.R_y) * np.cos(phi), -(self.R_x) * np.sin(phi)]).T, requires_grad=True).double()
         n_hole = n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]
-        hole = torch.column_stack([x_hole, y_hole]).double()
+        r_hole = self. R_x * torch.ones((phi.size, 1), requires_grad=True).double()
+        hole = torch.column_stack([x_hole, y_hole, r_hole, n_hole]).double()
+
         
-        return collocation, top, right, left, bottom, hole, n_hole
+        return collocation, top, right, left, bottom, hole
 
 
-    def plot_plate_with_hole(self, collocation, top, right, left, bottom, hole, n_hole):
+    def plot_plate_with_hole(self, collocation, top, right, left, bottom, hole):
         # Visualize geometry
         with torch.no_grad():
             mode = "markers"
