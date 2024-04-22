@@ -7,7 +7,7 @@ import plotly.figure_factory as ff
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from global_constants import L, R
+from global_constants import L, R, N1, N2
 
 class Plate:
     def __init__(self, R_x, N, M):
@@ -82,7 +82,7 @@ class Plate:
         x_hole = torch.tensor(self.R_x * np.cos(phi), requires_grad=True).double()
         y_hole = torch.tensor(self.R_y * np.sin(phi), requires_grad=True).double()
         n_hole = torch.tensor(np.stack([-(self.R_y) * np.cos(phi), -(self.R_x) * np.sin(phi)]).T, requires_grad=True).double()
-        n_hole = n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]
+        n_hole = (n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]) #* -1/12
         r_hole = self. R_x * torch.ones((phi.size, 1), requires_grad=True).double()
         hole = torch.column_stack([x_hole, y_hole, r_hole, n_hole]).double()
 
