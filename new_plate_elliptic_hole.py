@@ -93,6 +93,48 @@ class Plate:
 
         
         return collocation, top, right, left, bottom, hole
+    
+    def generate_dataset_for_plotting(self):
+        # Create collocation points
+        samples = qmc.LatinHypercube(d=2).random(1000 * self.M)
+        indices = np.random.choice(1000 * self.M, self.M, p=self.collocation_weights(samples), replace=False)
+        points = samples[indices]
+        r_collo = self.R_x * np.ones((indices.size, 1)) 
+        collocation = torch.tensor(np.hstack((points, r_collo)), requires_grad=True)
+
+        # Boundary points
+        x_top = torch.linspace(0, self.L, self.N, requires_grad=True)
+        y_top = self.L * torch.ones((self.N, 1), requires_grad=True)
+        r_top = self. R_x * torch.ones((self.N, 1), requires_grad=True)
+        top = torch.column_stack([x_top, y_top, r_top])
+
+        x_right = self.L * torch.ones((self.N, 1), requires_grad=True)
+        y_right = torch.linspace(0, self.L, self.N, requires_grad=True)
+        r_right = self. R_x * torch.ones((self.N, 1), requires_grad=True)
+        right = torch.column_stack([x_right, y_right, r_right])
+
+        NN = int(self.N * (self.L - self.R_y) / self.L)
+        x_left = torch.zeros((NN, 1), requires_grad=True)
+        y_left = torch.linspace(self.R_y, self.L, NN, requires_grad=True)
+        r_left = self. R_x * torch.ones((NN, 1), requires_grad=True)
+        left = torch.column_stack([x_left, y_left, r_left])
+
+        NN = int(self.N * (self.L - self.R_x) / self.L)
+        x_bottom = torch.linspace(self.R_x, self.L, NN, requires_grad=True)
+        y_bottom = torch.zeros((NN, 1), requires_grad=True)
+        r_bottom = self. R_x * torch.ones((NN, 1), requires_grad=True)
+        bottom = torch.column_stack([x_bottom, y_bottom, r_bottom])
+
+
+        phi = np.linspace(0, 0.5 * np.pi, int(self.N*0.5))
+        x_hole = torch.tensor(self.R_x * np.cos(phi), requires_grad=True)
+        y_hole = torch.tensor(self.R_y * np.sin(phi), requires_grad=True)
+        n_hole = torch.tensor(np.stack([-(self.R_y) * np.cos(phi), -(self.R_x) * np.sin(phi)]).T, requires_grad=True)
+        n_hole = (n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]) #* -1/12
+        r_hole = self. R_x * torch.ones((phi.size, 1), requires_grad=True)
+        hole = torch.column_stack([x_hole, y_hole, r_hole, n_hole])
+
+        return collocation, top, right, left, bottom, hole
 
 
     def plot_plate_with_hole(self, collocation, top, right, left, bottom, hole):
