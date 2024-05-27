@@ -8,6 +8,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from global_constants import L, R, N1, N2
+DTYPE = torch.float32
 
 class Plate:
     def __init__(self, R_x, N, M):
@@ -27,14 +28,14 @@ class Plate:
     def load_reference_data(self):
         # Load reference data
         data_input = torch.as_tensor(
-            np.loadtxt(f"data/inputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
+            np.loadtxt(f"data/inputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=DTYPE
         )
         data_output = torch.as_tensor(
-            np.loadtxt(f"data/outputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
+            np.loadtxt(f"data/outputs_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=DTYPE
         )
 
         data_hole = torch.as_tensor(
-            np.loadtxt(f"data/hole_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=torch.float64
+            np.loadtxt(f"data/hole_Rx={self.R_x:.2f}.csv", delimiter=","), dtype=DTYPE
         )
         return data_input, data_output, data_hole
     
@@ -52,39 +53,43 @@ class Plate:
         indices = np.random.choice(1000 * self.M, self.M, p=self.collocation_weights(samples), replace=False)
         points = samples[indices]
         r_collo = self.R_x * np.ones((indices.size, 1)) 
-        collocation = torch.tensor(np.hstack((points, r_collo)), requires_grad=True).double()
+        collocation = torch.tensor(np.hstack((points, r_collo)),dtype=DTYPE)
 
         # Boundary points
-        x_top = torch.linspace(0, self.L, self.N, requires_grad=True).double()
-        y_top = self.L * torch.ones((self.N, 1), requires_grad=True).double()
-        r_top = self. R_x * torch.ones((self.N, 1), requires_grad=True).double()
-        top = torch.column_stack([x_top, y_top, r_top]).double()
+        x_top = L * torch.tensor(qmc.LatinHypercube(d=1).random(self.N), dtype=DTYPE)
+        y_top = self.L * torch.ones((self.N, 1))
+        r_top = self. R_x * torch.ones((self.N, 1))
+        top = torch.column_stack([x_top, y_top, r_top])
 
-        x_right = self.L * torch.ones((self.N, 1), requires_grad=True).double()
-        y_right = torch.linspace(0, self.L, self.N, requires_grad=True).double()
-        r_right = self. R_x * torch.ones((self.N, 1), requires_grad=True).double()
-        right = torch.column_stack([x_right, y_right, r_right]).double()
+        x_right = self.L * torch.ones((self.N, 1))
+        y_right = L * torch.tensor(qmc.LatinHypercube(d=1).random(self.N), dtype=DTYPE)
+        r_right = self. R_x * torch.ones((self.N, 1))
+        right = torch.column_stack([x_right, y_right, r_right])
 
         NN = int(self.N * (self.L - self.R_y) / self.L)
-        x_left = torch.zeros((NN, 1), requires_grad=True).double()
-        y_left = torch.linspace(self.R_y, self.L, NN, requires_grad=True).double()
-        r_left = self. R_x * torch.ones((NN, 1), requires_grad=True).double()
-        left = torch.column_stack([x_left, y_left, r_left]).double()
+        left_rand_samp = qmc.LatinHypercube(d=1).random(NN)
+        x_left = torch.zeros((NN, 1))
+        y_left = self.R_y + (L - self.R_y) * torch.tensor(left_rand_samp, dtype=DTYPE)
+        r_left = self. R_x * torch.ones((NN, 1))
+        left = torch.column_stack([x_left, y_left, r_left])
 
         NN = int(self.N * (self.L - self.R_x) / self.L)
-        x_bottom = torch.linspace(self.R_x, self.L, NN, requires_grad=True).double()
-        y_bottom = torch.zeros((NN, 1), requires_grad=True).double()
-        r_bottom = self. R_x * torch.ones((NN, 1), requires_grad=True).double()
-        bottom = torch.column_stack([x_bottom, y_bottom, r_bottom]).double()
+        bottom_rand_samp = qmc.LatinHypercube(d=1).random(NN)
+        x_bottom = self.R_x + (L - self.R_x) * torch.tensor(bottom_rand_samp, dtype=DTYPE)
+        y_bottom = torch.zeros((NN, 1))
+        r_bottom = self. R_x * torch.ones((NN, 1))
+        bottom = torch.column_stack([x_bottom, y_bottom, r_bottom])
 
 
-        phi = np.linspace(0, 0.5 * np.pi, int(self.N*0.5))
-        x_hole = torch.tensor(self.R_x * np.cos(phi), requires_grad=True).double()
-        y_hole = torch.tensor(self.R_y * np.sin(phi), requires_grad=True).double()
-        n_hole = torch.tensor(np.stack([-(self.R_y) * np.cos(phi), -(self.R_x) * np.sin(phi)]).T, requires_grad=True).double()
-        n_hole = (n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]) #* -1/12
-        r_hole = self. R_x * torch.ones((phi.size, 1), requires_grad=True).double()
-        hole = torch.column_stack([x_hole, y_hole, r_hole, n_hole]).double()
+        hole_rand_samp = qmc.LatinHypercube(d=1).random(int(self.N * np.pi * self.R_x / L)).ravel()
+        phi = 0.5 * np.pi * torch.tensor(hole_rand_samp, dtype=DTYPE)
+        #phi = np.linspace(0, 0.5 * np.pi, int(self.N*0.5))
+        x_hole = self.R_x * torch.cos(phi)
+        y_hole = self.R_y * torch.sin(phi)
+        n_hole = torch.stack([-self.R_y * torch.cos(phi), -self.R_x * torch.sin(phi)]).T
+        n_hole = n_hole / torch.linalg.norm(n_hole, axis=1)[:, None]
+        r_hole = self. R_x * torch.ones((phi.size(dim=0), 1))
+        hole = torch.column_stack([x_hole, y_hole, r_hole, n_hole])
 
         
         return collocation, top, right, left, bottom, hole
